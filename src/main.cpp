@@ -1,9 +1,27 @@
 #include "include/Progression.h"
+#include "include/cspace.h"
+#include "include/prm.h"
+#include "include/prm_renderer.h"
 
 using namespace std;
 
+CSpace GenerateCSpace(vector<GameObject*>& obstacles) {
+    Transform boundaries = Transform(
+            glm::vec3(0, 0, 0),
+            glm::vec3(0, 0, 0),
+            glm::vec3(20, 0, 20));
+    return CSpace(boundaries, &obstacles, .5);
+}
+
+PRM* GeneratePRM(CSpace& c, int samples, float neighbor_radius) {
+    PRM* prm = new PRM;
+    prm->GeneratePRM(c, samples, neighbor_radius);
+    return prm;
+} 
+
 int main() {
     InitEngine();
+    srand(time(NULL));
     Window window("Starter Project", 800, 600);
 
     Material* redMat = resourceManager->AllocateResource<Material>(Material(
@@ -36,12 +54,23 @@ int main() {
     GameObject agent;
     agent.AddComponent<MeshRenderer>(new MeshRenderer(cylinderMesh, blueMat, "meshShader"));
     agent.transform.position = glm::vec3(-9, 0, 9);
-    agent.transform.scale = glm::vec3(.25, 1, .25);
+    agent.transform.scale = glm::vec3(.5, 1, .5);
 
     Camera camera = Camera();
     camera.AddComponent<CameraController>(new CameraController(8, .005));
     camera.transform.rotation.x = glm::radians(-90.0f);
     camera.transform.position = glm::vec3(0, 20, 0);
+
+    /*
+    renderer->AddShader("lineShader", "shaders/line_shader.vert",
+                                      "shaders/line_shader.frag", "");
+    */
+    std::vector<GameObject*> obstacles;
+    obstacles.push_back(&obstacle);
+    CSpace cspace = GenerateCSpace(obstacles);
+    PRM* prm = GeneratePRM(cspace, 100, 5);
+    prm->nodeRenderer = new PRMRenderer(prm, planeMesh, blueMat, "meshShader");
+    prm->nodeRenderer->Start();
 
     bool quit = false;
     window.SetRelativeMouse(true);
