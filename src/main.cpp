@@ -67,12 +67,11 @@ int main() {
     std::vector<GameObject*> obstacles;
     obstacles.push_back(&obstacle);
     CSpace cspace = GenerateCSpace(obstacles);
-    PRM* prm = GeneratePRM(cspace, 50, 5);
+    PRM* prm = GeneratePRM(cspace, 50, 10);
     prm->nodeRenderer = new PRMRenderer(prm, planeMesh, blueMat, "meshShader");
     prm->nodeRenderer->Start();
     glm::vec3* lines = prm->GetLines();
     int numLines = prm->GetNumLines();
-    // prm->lineRenderer = new LineRenderer(glm::vec4(0, 1, 0, 1), lines, numLines, 2, "lineShader");
     prm->lineRenderer = new LineRenderer;
     prm->lineRenderer->Start();
     prm->lineRenderer->UploadData(lines, numLines);

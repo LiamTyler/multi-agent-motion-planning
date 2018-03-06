@@ -18,6 +18,27 @@ bool CSpace::InSpace(const glm::vec3& point) const {
     return true;
 }
 
+bool CSpace::IntersectsSphere(const glm::vec3& start, const glm::vec3& dir,
+        const glm::vec3& opos, float r) {
+    float t0 = -1, t1 = -1;
+    glm::vec3 OC = start - opos;
+    float b = 2*glm::dot(dir, OC);
+    float c = glm::dot(OC, OC) - r*r;
+    float disc = b*b - 4*c;
+    if (disc < 0)
+        return false;
+    t0 = (-b + std::sqrt(disc)) / 2.0;
+    t1 = (-b - std::sqrt(disc)) / 2.0;
+    return (t0 >= 0 || t1 >= 0);
+}
+
 bool CSpace::ValidLine(const glm::vec3& start, const glm::vec3& end) {
+    for (int i = 0; i < obstacles_->size(); i++) {
+        glm::vec3 opoint = (*obstacles_)[i]->transform.position;
+        float oradius = (*obstacles_)[i]->transform.scale.x + extent_;
+        glm::vec3 dir = glm::normalize(end - start);
+        if (IntersectsSphere(start, dir, opoint, oradius))
+            return false;
+    }
     return true;
 }

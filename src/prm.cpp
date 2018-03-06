@@ -19,6 +19,7 @@ void PRM::FindNeighbors(Node* node) {
         if (glm::length(node->position - neighbor->position) <= radius &&
             cspace->ValidLine(node->position, neighbor->position)) {
             node->neighbors.push_back(neighbor);
+            neighbor->neighbors.push_back(node);
             glm::vec3 start = node->position;
             glm::vec3 end = neighbor->position;
             start.y = 0.01;
