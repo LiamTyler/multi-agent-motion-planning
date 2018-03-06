@@ -17,3 +17,7 @@ bool CSpace::InSpace(const glm::vec3& point) const {
     }
     return true;
 }
+
+bool CSpace::ValidLine(const glm::vec3& start, const glm::vec3& end) {
+    return true;
+}

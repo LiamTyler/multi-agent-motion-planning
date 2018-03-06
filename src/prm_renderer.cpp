@@ -47,7 +47,7 @@ void PRMRenderer::Update(float dt) {
 void PRMRenderer::Stop() {
 }
 
-void PRMRenderer::Render(Shader& shader, glm::mat4& V) {
+void PRMRenderer::Render(Shader& shader, const Camera& camera) {
     // send material
     glUniform4fv(shader["ka"], 1, value_ptr(material_->ka));
     glUniform4fv(shader["kd"], 1, value_ptr(material_->kd));
@@ -60,6 +60,7 @@ void PRMRenderer::Render(Shader& shader, glm::mat4& V) {
         glUniform1i(shader["diffuseTex"], 0);
     }
 
+    glm::mat4 V = camera.GetV();
     for (int i = 0; i < prm_->nodes_.size(); i++) {
         glm::mat4 model(1);
         glm::vec3 pos = prm_->nodes_[i]->position;

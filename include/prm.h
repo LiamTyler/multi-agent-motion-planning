@@ -2,6 +2,7 @@
 
 #include "include/Progression.h"
 #include "include/cspace.h"
+#include "include/line_renderer.h"
 
 class Node {
     public:
@@ -11,9 +12,19 @@ class Node {
 
 class PRM {
     public:
-        PRM();
+        PRM(CSpace* c, float r);
         ~PRM();
-        void GeneratePRM(const CSpace& c, int samples, float neighbor_radius);
+        void GeneratePRM(int samples);
+        bool AddNode(glm::vec3 point);
+        void FindNeighbors(Node* node);
+        glm::vec3* GetLines() { return &lines_[0]; }
+        int GetNumLines() { return lines_.size(); }
         std::vector<Node*> nodes_;
         RenderComponent* nodeRenderer;
+        LineRenderer* lineRenderer;
+
+    protected:
+        float radius;
+        CSpace* cspace;
+        std::vector<glm::vec3> lines_;
 };

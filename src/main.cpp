@@ -2,6 +2,7 @@
 #include "include/cspace.h"
 #include "include/prm.h"
 #include "include/prm_renderer.h"
+#include "include/line_renderer.h"
 
 using namespace std;
 
@@ -9,13 +10,13 @@ CSpace GenerateCSpace(vector<GameObject*>& obstacles) {
     Transform boundaries = Transform(
             glm::vec3(0, 0, 0),
             glm::vec3(0, 0, 0),
-            glm::vec3(20, 0, 20));
+            glm::vec3(20, 1, 20));
     return CSpace(boundaries, &obstacles, .5);
 }
 
 PRM* GeneratePRM(CSpace& c, int samples, float neighbor_radius) {
-    PRM* prm = new PRM;
-    prm->GeneratePRM(c, samples, neighbor_radius);
+    PRM* prm = new PRM(&c, neighbor_radius);
+    prm->GeneratePRM(samples);
     return prm;
 } 
 
@@ -61,16 +62,20 @@ int main() {
     camera.transform.rotation.x = glm::radians(-90.0f);
     camera.transform.position = glm::vec3(0, 20, 0);
 
-    /*
     renderer->AddShader("lineShader", "shaders/line_shader.vert",
                                       "shaders/line_shader.frag", "");
-    */
     std::vector<GameObject*> obstacles;
     obstacles.push_back(&obstacle);
     CSpace cspace = GenerateCSpace(obstacles);
-    PRM* prm = GeneratePRM(cspace, 100, 5);
+    PRM* prm = GeneratePRM(cspace, 50, 5);
     prm->nodeRenderer = new PRMRenderer(prm, planeMesh, blueMat, "meshShader");
     prm->nodeRenderer->Start();
+    glm::vec3* lines = prm->GetLines();
+    int numLines = prm->GetNumLines();
+    // prm->lineRenderer = new LineRenderer(glm::vec4(0, 1, 0, 1), lines, numLines, 2, "lineShader");
+    prm->lineRenderer = new LineRenderer;
+    prm->lineRenderer->Start();
+    prm->lineRenderer->UploadData(lines, numLines);
 
     bool quit = false;
     window.SetRelativeMouse(true);
