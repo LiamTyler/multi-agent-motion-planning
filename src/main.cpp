@@ -3,6 +3,7 @@
 #include "include/prm.h"
 #include "include/prm_renderer.h"
 #include "include/line_renderer.h"
+#include "include/path.h"
 
 using namespace std;
 
@@ -19,6 +20,7 @@ PRM* GeneratePRM(CSpace& c, int samples, float neighbor_radius) {
     prm->GeneratePRM(samples);
     return prm;
 } 
+
 
 int main() {
     InitEngine();
@@ -76,6 +78,16 @@ int main() {
     prm->lineRenderer->Start();
     prm->lineRenderer->UploadData(lines, numLines);
 
+    Path path(&cspace, prm);
+    if (path.GeneratePath(agent.transform.position, glm::vec3(9, 0, -9)))
+        cout << "path found" << endl;
+    else
+        cout << "NO path found" << endl;
+
+    std::vector<PRMNode*> agentPath = path.path_;
+    glm::vec3 diff = agentPath[0]->position - agent.transform.position;
+    int currentNode = 0;
+
     bool quit = false;
     window.SetRelativeMouse(true);
     while (!quit) {
@@ -89,6 +101,18 @@ int main() {
         floor.Update(dt);
         obstacle.Update(dt);
         agent.Update(dt);
+        if (currentNode != agentPath.size()) {
+            glm::vec3 currPos = agent.transform.position;
+            glm::vec3 goalPos = agentPath[currentNode]->position;
+            currPos += diff * dt * .2;
+            agent.transform.position = currPos;
+            if (glm::length(goalPos - currPos) < 0.05) {
+                currentNode += 1;
+                if (currentNode != agentPath.size())
+                    diff = agentPath[currentNode]->position - currPos;
+            }
+        }
+
         renderer->RenderScene(camera);
 
         window.EndFrame();

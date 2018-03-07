@@ -11,17 +11,23 @@ PRM::~PRM() {
     }
 }
 
-void PRM::FindNeighbors(Node* node) {
+void PRM::FindNeighbors(PRMNode* node) {
     for (int i = 0; i < nodes_.size(); i++) {
-        Node* neighbor = nodes_[i];
+        PRMNode* neighbor = nodes_[i];
         if (neighbor == node)
             continue;
         if (glm::length(node->position - neighbor->position) <= radius &&
             cspace->ValidLine(node->position, neighbor->position)) {
-            node->neighbors.push_back(neighbor);
-            neighbor->neighbors.push_back(node);
             glm::vec3 start = node->position;
             glm::vec3 end = neighbor->position;
+            PRMNeighbor* n1 = new PRMNeighbor;
+            PRMNeighbor* n2 = new PRMNeighbor;
+            n1->cost = glm::length(end - start);
+            n2->cost = glm::length(end - start);
+            n1->node = neighbor;
+            n2->node = node;
+            node->neighbors.push_back(n1);
+            neighbor->neighbors.push_back(n2);
             start.y = 0.01;
             end.y = 0.01;
             lines_.push_back(start);
@@ -30,54 +36,59 @@ void PRM::FindNeighbors(Node* node) {
     }
 }
 
-bool PRM::AddNode(glm::vec3 point) {
+PRMNode* PRM::AddNode(glm::vec3 point) {
     if (cspace->InSpace(point)) {
-        Node* n = new Node;
+        PRMNode* n = new PRMNode;
         n->position = point;
         FindNeighbors(n);
         nodes_.push_back(n);
-        return true;
+        return n;
     } else {
-        return false;
+        return nullptr;
     }
 }
 
 void PRM::GeneratePRM(int samples) {
-    int numNodes = 0;
+    int numPRMNodes = 0;
     nodes_.clear();
     nodes_.resize(samples);
     // find valid points
-    while (numNodes < samples) {
+    while (numPRMNodes < samples) {
         float rx = rand() / (float)RAND_MAX;
         float rz = rand() / (float)RAND_MAX;
         rx = (cspace->transform_.scale.x - 2*cspace->extent_) * (rx - .5);
         rz = (cspace->transform_.scale.z - 2*cspace->extent_) * (rz - .5);
         glm::vec3 point(rx, 0, rz);
         if (cspace->InSpace(point)) {
-            Node* n = new Node;
+            PRMNode* n = new PRMNode;
             n->position = point;
-            nodes_[numNodes] = n;
-            numNodes++;
+            nodes_[numPRMNodes] = n;
+            numPRMNodes++;
         }
     }
 
     // find neighbors
     for (int i = 0; i < samples; i++) {
-        Node* node = nodes_[i];
+        PRMNode* node = nodes_[i];
         for (int ii = i + 1; ii < nodes_.size(); ii++) {
-            Node* neighbor = nodes_[ii];
+            PRMNode* neighbor = nodes_[ii];
             if (glm::length(node->position - neighbor->position) <= radius &&
                 cspace->ValidLine(node->position, neighbor->position)) {
-                node->neighbors.push_back(neighbor);
-                neighbor->neighbors.push_back(node);
                 glm::vec3 start = node->position;
                 glm::vec3 end = neighbor->position;
+                PRMNeighbor* n1 = new PRMNeighbor;
+                PRMNeighbor* n2 = new PRMNeighbor;
+                n1->cost = glm::length(end - start);
+                n2->cost = glm::length(end - start);
+                n1->node = neighbor;
+                n2->node = node;
+                node->neighbors.push_back(n1);
+                neighbor->neighbors.push_back(n2);
                 start.y = 0.01;
                 end.y = 0.01;
                 lines_.push_back(start);
                 lines_.push_back(end);
             }
         }
-        FindNeighbors(node);
     }
 }
