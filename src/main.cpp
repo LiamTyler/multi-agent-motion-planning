@@ -72,11 +72,8 @@ int main() {
     PRM* prm = GeneratePRM(cspace, 50, 10);
     prm->nodeRenderer = new PRMRenderer(prm, planeMesh, blueMat, "meshShader");
     prm->nodeRenderer->Start();
-    glm::vec3* lines = prm->GetLines();
-    int numLines = prm->GetNumLines();
     prm->lineRenderer = new LineRenderer;
     prm->lineRenderer->Start();
-    prm->lineRenderer->UploadData(lines, numLines);
 
     Path path(&cspace, prm);
     if (path.GeneratePath(agent.transform.position, glm::vec3(9, 0, -9)))
@@ -85,31 +82,40 @@ int main() {
         cout << "NO path found" << endl;
 
     std::vector<PRMNode*> agentPath = path.path_;
-    glm::vec3 diff = agentPath[0]->position - agent.transform.position;
+    glm::vec3 diff = glm::normalize(agentPath[0]->position - agent.transform.position);
     int currentNode = 0;
 
+    glm::vec3* lines = prm->GetLines();
+    int numLines = prm->GetNumLines();
+    prm->lineRenderer->UploadData(lines, numLines);
+
     bool quit = false;
+    bool paused = false;
     window.SetRelativeMouse(true);
     while (!quit) {
         window.StartFrame();
         quit = input->HandleInput();
         if (input->KeyPressed(K_ESC))
             quit = true;
+        if (input->KeyPressed(K_P))
+            paused = !paused;
 
         float dt = window.GetDT();
         camera.Update(dt);
-        floor.Update(dt);
-        obstacle.Update(dt);
-        agent.Update(dt);
-        if (currentNode != agentPath.size()) {
-            glm::vec3 currPos = agent.transform.position;
-            glm::vec3 goalPos = agentPath[currentNode]->position;
-            currPos += diff * dt * .2;
-            agent.transform.position = currPos;
-            if (glm::length(goalPos - currPos) < 0.05) {
-                currentNode += 1;
-                if (currentNode != agentPath.size())
-                    diff = agentPath[currentNode]->position - currPos;
+        if (!paused) {
+            floor.Update(dt);
+            obstacle.Update(dt);
+            agent.Update(dt);
+            if (currentNode != agentPath.size()) {
+                glm::vec3 currPos = agent.transform.position;
+                glm::vec3 goalPos = agentPath[currentNode]->position;
+                currPos += diff * dt * 4;
+                agent.transform.position = currPos;
+                if (glm::length(goalPos - currPos) < 0.05) {
+                    currentNode += 1;
+                    if (currentNode != agentPath.size())
+                        diff = glm::normalize(agentPath[currentNode]->position - currPos);
+                }
             }
         }
 
