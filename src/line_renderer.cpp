@@ -1,7 +1,7 @@
 #include "include/line_renderer.h"
 
 LineRenderer::LineRenderer() : LineRenderer(
-        glm::vec4(0, .6, 0, 1),
+        glm::vec4(0, 0, 0, 1),
         nullptr,
         0,
         2,

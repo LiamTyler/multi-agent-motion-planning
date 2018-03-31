@@ -7,11 +7,14 @@
 
 using namespace std;
 
+std::vector<NavAgent*> navAgentList;
+
 CSpace GenerateCSpace(vector<GameObject*>& obstacles) {
     Transform boundaries = Transform(
             glm::vec3(0, 0, 0),
             glm::vec3(0, 0, 0),
-            glm::vec3(20, 1, 20));
+            // glm::vec3(20, 1, 20));
+            glm::vec3(32, 1, 18));
     return CSpace(boundaries, &obstacles, .5);
 }
 
@@ -42,22 +45,42 @@ int main() {
             glm::vec4(.3, .3, 1.0, 1),
             glm::vec4(.6, .6,  .6, 1),
             50));
+    Material* boidMat = resourceManager->AllocateResource<Material>(Material(
+            glm::vec4(.3, 1.0, .3, 1),
+            glm::vec4(.3, 1.0, 0.3, 1),
+            glm::vec4(.6, .6,  .6, 1),
+            50));
     Mesh* planeMesh = resourceManager->LoadMesh("models/plane.obj");
+    Mesh* triangleMesh = resourceManager->LoadMesh("models/triangle.obj");
     Mesh* cylinderMesh = resourceManager->LoadMesh("models/cylinder.obj");
 
     GameObject floor;
-    floor.transform.scale = glm::vec3(10, 1, 10);
+    floor.transform.scale = 1.1 * glm::vec3(16, 1, 9);
     floor.AddComponent<MeshRenderer>(new MeshRenderer(planeMesh, grayMat, "meshShader"));
 
-    GameObject obstacle;
-    obstacle.AddComponent<MeshRenderer>(new MeshRenderer(cylinderMesh, redMat, "meshShader"));
-    obstacle.transform.position.y = 1;
-    obstacle.transform.scale = glm::vec3(2, 1, 2);
+    std::vector<GameObject*> obstacles;
+    // GameObject obstacle;
+    // obstacle.AddComponent<MeshRenderer>(new MeshRenderer(cylinderMesh, redMat, "meshShader"));
+    // obstacle.transform.position.y = 1;
+    // obstacle.transform.scale = glm::vec3(2, 1, 2);
+    // obstacles.push_back(&obstacle);
 
-    GameObject agent;
-    agent.AddComponent<MeshRenderer>(new MeshRenderer(cylinderMesh, blueMat, "meshShader"));
-    agent.transform.position = glm::vec3(-9, 0, 9);
-    agent.transform.scale = glm::vec3(.5, 1, .5);
+    std::vector<GameObject*> agents;
+    std::vector<glm::vec3> starts;
+    starts.push_back(glm::vec3(-9, 0, 9));
+    starts.push_back(glm::vec3(9, 0, 9));
+    starts.push_back(glm::vec3(9, 0, -9));
+    starts.push_back(glm::vec3(-9, 0, -9));
+    // for (int i = 0; i < starts.size(); i++) {
+    for (int i = 0; i < 100; i++) {
+        GameObject* agent = new GameObject;
+        agent->AddComponent<MeshRenderer>(new MeshRenderer(triangleMesh, boidMat, "meshShader"));
+        agent->transform.position = glm::vec3(0, 0, 0);
+        // agent->transform.position = starts[i];
+        agent->transform.position.y = 1;
+        agent->transform.scale = glm::vec3(.5, 1, .5);
+        agents.push_back(agent);
+    }
 
     Camera camera = Camera();
     camera.AddComponent<CameraController>(new CameraController(8, .005));
@@ -66,22 +89,25 @@ int main() {
 
     renderer->AddShader("lineShader", "shaders/line_shader.vert",
                                       "shaders/line_shader.frag", "");
-    std::vector<GameObject*> obstacles;
-    obstacles.push_back(&obstacle);
     CSpace cspace = GenerateCSpace(obstacles);
     PRM* prm = GeneratePRM(cspace, 50, 10);
     prm->nodeRenderer = new PRMRenderer(prm, planeMesh, blueMat, "meshShader");
     prm->nodeRenderer->Start();
-    prm->lineRenderer = new LineRenderer;
-    prm->lineRenderer->Start();
+    // prm->lineRenderer = new LineRenderer;
+    // prm->lineRenderer->Start();
 
-    glm::vec3* lines = prm->GetLines();
-    int numLines = prm->GetNumLines();
-    prm->lineRenderer->UploadData(lines, numLines);
+    // glm::vec3* lines = prm->GetLines();
+    // int numLines = prm->GetNumLines();
+    // prm->lineRenderer->UploadData(lines, numLines);
 
-    agent.AddComponent<NavAgent>(new NavAgent(prm, 4));
-    agent.GetComponent<NavAgent>()->SetGoal(glm::vec3(9, 0, -9));
-    agent.GetComponent<NavAgent>()->FindPath();
+    for (int i = 0; i < agents.size(); i++) {
+        GameObject* agent = agents[i];
+        agent->AddComponent<NavAgent>(new NavAgent(prm, 4, 3));
+        // agent->GetComponent<NavAgent>()->SetGoal(-starts[i]);
+        // agent->GetComponent<NavAgent>()->FindPath();
+        agent->GetComponent<NavAgent>()->active = true;
+        navAgentList.push_back(agent->GetComponent<NavAgent>());
+    }
 
     bool quit = false;
     bool paused = false;
@@ -98,8 +124,12 @@ int main() {
         camera.Update(dt);
         if (!paused) {
             floor.Update(dt);
-            obstacle.Update(dt);
-            agent.Update(dt);
+            for (auto& agent : agents) {
+                agent->Update(dt);
+            }
+            for (auto& agent : agents) {
+                agent->GetComponent<NavAgent>()->PostUpdate(dt);
+            }
         }
 
         renderer->RenderScene(camera);
