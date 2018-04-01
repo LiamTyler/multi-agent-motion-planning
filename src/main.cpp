@@ -72,7 +72,7 @@ int main() {
     starts.push_back(glm::vec3(9, 0, -9));
     starts.push_back(glm::vec3(-9, 0, -9));
     // for (int i = 0; i < starts.size(); i++) {
-    for (int i = 0; i < 100; i++) {
+    for (int i = 0; i < 150; i++) {
         GameObject* agent = new GameObject;
         agent->AddComponent<MeshRenderer>(new MeshRenderer(triangleMesh, boidMat, "meshShader"));
         agent->transform.position = glm::vec3(0, 0, 0);
@@ -112,6 +112,8 @@ int main() {
     bool quit = false;
     bool paused = false;
     window.SetRelativeMouse(true);
+    float boidDT = 1.0 / 60;
+    float boidTime = 0;
     while (!quit) {
         window.StartFrame();
         quit = input->HandleInput();
@@ -121,15 +123,23 @@ int main() {
             paused = !paused;
 
         float dt = window.GetDT();
+        boidTime += dt;
         camera.Update(dt);
         if (!paused) {
             floor.Update(dt);
+            if (boidTime > boidDT) {
+                for (auto& agent : agents) {
+                    agent->Update(boidDT);
+                    agent->GetComponent<NavAgent>()->PostUpdate(boidDT);
+                }
+                boidTime = 0;
+            }
+            /*
             for (auto& agent : agents) {
                 agent->Update(dt);
-            }
-            for (auto& agent : agents) {
                 agent->GetComponent<NavAgent>()->PostUpdate(dt);
             }
+            */
         }
 
         renderer->RenderScene(camera);

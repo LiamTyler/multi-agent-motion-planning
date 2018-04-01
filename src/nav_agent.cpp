@@ -17,12 +17,14 @@ NavAgent::NavAgent(PRM* p, float s, float r) {
     velocity = glm::vec3(0);
     active = false;
     currGoalNode = 0;
-    maxForce = 2;
+
+    maxSpeed = 10;
+    maxForce = 10;
 }
 
 void NavAgent::Start() {
-    float a= rand() / (float) RAND_MAX;
-    a*= 2 * M_PI;
+    float a = rand() / (float) RAND_MAX;
+    a *= 2 * M_PI;
     velocity = glm::vec3(std::cos(a), 0, -std::sin(a));
 }
 
@@ -47,7 +49,7 @@ void NavAgent::Update(float dt) {
     steerForce = glm::vec3(0);
     if (active) {
         // steerForce += 1 * GoalForce();
-        steerForce += 1.5 * Separation();
+        steerForce += 2 * Separation();
         steerForce += 1 * Cohesion();
         steerForce += 1 * Alignment();
     }
@@ -74,7 +76,8 @@ void NavAgent::PostUpdate(float dt) {
         gameObject->transform.position.z = -Z;
 }
 
-glm::vec3 NavAgent::Steer(glm::vec3 v) {
+glm::vec3 NavAgent::Steer(glm::vec3 target) {
+    /*
     if (glm::length(v) > 0) {
         v = maxSpeed * normalize(v);
         v = v - velocity;
@@ -84,6 +87,13 @@ glm::vec3 NavAgent::Steer(glm::vec3 v) {
         v = glm::vec3(0);
     }
     return v;
+    */
+    glm::vec3 desired = target - GetPos();
+    desired = maxSpeed * normalize(desired);
+    glm::vec3 sub = desired - velocity;
+    if (glm::length(sub) > maxForce)
+        sub = glm::normalize(sub) * maxForce;
+    return sub;
 }
 
 glm::vec3 NavAgent::GoalForce() {
@@ -117,8 +127,14 @@ glm::vec3 NavAgent::Separation() {
     }
     if (count > 0)
         sum /= count;
+    if (glm::length(sum) > 0) {
+        sum = maxSpeed * glm::normalize(sum);
+        sum -= velocity;
+        if (glm::length(sum) > maxForce)
+            sum = maxForce * glm::normalize(sum);
+    }
 
-    return Steer(sum);
+    return sum;
 }
 
 glm::vec3 NavAgent::Cohesion() {
@@ -134,10 +150,12 @@ glm::vec3 NavAgent::Cohesion() {
             sum += agent->GetPos();
         }
     }
-    if (count)
+    if (count) {
         sum /= count;
-
-    return Steer(sum);
+        return Steer(sum);
+    } else {
+        return glm::vec3(0);
+    }
 }
 
 glm::vec3 NavAgent::Alignment() {
@@ -155,6 +173,12 @@ glm::vec3 NavAgent::Alignment() {
     }
     if (count)
         sum /= count;
+    if (glm::length(sum) > 0) {
+        sum = maxSpeed * glm::normalize(sum);
+        sum -= velocity;
+        if (glm::length(sum) > maxForce)
+            sum = maxForce * glm::normalize(sum);
+    }
 
-    return Steer(sum);
+    return sum;
 }
