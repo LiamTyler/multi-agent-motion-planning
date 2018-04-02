@@ -19,8 +19,8 @@ NavAgent::NavAgent(PRM* p, float s, float r) {
     active = false;
     currGoalNode = 0;
 
-    maxSpeed = 10;
-    maxForce = 10;
+    maxSpeed = 5;
+    maxForce = 4;
 }
 
 void NavAgent::Start() {
@@ -49,9 +49,9 @@ bool NavAgent::FindPath() {
 void NavAgent::Update(float dt) {
     steerForce = glm::vec3(0);
     if (active) {
-        // steerForce += 1 * GoalForce();
-        steerForce += 5 * ObstacleAvoid();
-        steerForce += 4 * Separation();
+        steerForce += 2 * GoalForce();
+        steerForce += 15 * ObstacleAvoid();
+        steerForce += 3 * Separation();
         steerForce += 1 * Cohesion();
         steerForce += 1 * Alignment();
 
@@ -64,6 +64,7 @@ void NavAgent::Update(float dt) {
         gameObject->transform.position += velocity * dt;
 
         // TODO: delete this once goals are there
+        /*
         vec3 p = GetPos();
         float X = 16;
         float Z = 9;
@@ -75,6 +76,7 @@ void NavAgent::Update(float dt) {
             gameObject->transform.position.z = Z;
         else if (p.z > Z)
             gameObject->transform.position.z = -Z;
+        */
         }
 }
 
@@ -131,15 +133,29 @@ glm::vec3 NavAgent::ObstacleAvoid() {
     for (int i = 0; i < obstacles.size(); i++) {
         glm::vec3 opos = obstacles[i]->transform.position;
         opos.y = 0;
-        float r = obstacles[i]->transform.scale.x;
-        float separation = glm::length(pos - opos) - r - rad;
-        if (separation < desiredSep) {
+        float r = obstacles[i]->transform.scale.x + rad;
+
+        float t0 = -1, t1 = 0;
+        glm::vec3 OC = pos - opos;
+        float a = glm::dot(velocity, velocity);
+        float b = 2 * glm::dot(velocity, OC);
+        float c = glm::dot(OC, OC) - r * r;
+        float disc = b*b - 4*a*c;
+        if (disc < 0)
+            continue;
+        t0 = (-b + std::sqrt(disc)) / 2.0;
+        t1 = (-b - std::sqrt(disc)) / 2.0;
+        t0 = std::fmin(t0, t1);
+        if (t0 > 0 && t0 < 1) {
+            glm::vec3 c = pos + t0 * velocity;
+            glm::vec3 n = glm::normalize(c - opos);
             count++;
-            sum += normalize(velocity + (pos - opos)) / std::fmax(0.01, separation);
+            sum += n / t0;
         }
     }
     if (count)
-        sum = SteerToVelocity(sum);
+        sum = SteerToVelocity(sum / count);
+
     return sum;
 }
 

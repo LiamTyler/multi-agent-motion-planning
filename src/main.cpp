@@ -59,11 +59,22 @@ int main() {
     floor.transform.scale = 1.1 * glm::vec3(16, 1, 9);
     floor.AddComponent<MeshRenderer>(new MeshRenderer(planeMesh, grayMat, "meshShader"));
 
-    GameObject obstacle;
-    obstacle.AddComponent<MeshRenderer>(new MeshRenderer(cylinderMesh, redMat, "meshShader"));
-    obstacle.transform.position.y = 1;
-    obstacle.transform.scale = glm::vec3(2, 1, 2);
-    obstacles.push_back(&obstacle);
+    std::vector<glm::vec3> opos;
+    opos.push_back(glm::vec3(0, 1, 0));
+    opos.push_back(glm::vec3(-.5, 1, -1));
+    opos.push_back(glm::vec3(-1.5, 1, -2));
+    opos.push_back(glm::vec3(-2.5, 1, -2.5));
+    opos.push_back(glm::vec3(-3.5, 1, -2.75));
+    opos.push_back(glm::vec3(.5, 1, 1));
+    opos.push_back(glm::vec3(.75, 1, 2));
+    float r = 1;
+    for (int i = 0; i < opos.size(); i++) {
+        GameObject* obstacle = new GameObject;
+        obstacle->AddComponent<MeshRenderer>(new MeshRenderer(cylinderMesh, redMat, "meshShader"));
+        obstacle->transform.position = opos[i];
+        obstacle->transform.scale = glm::vec3(r, 1, r);
+        obstacles.push_back(obstacle);
+    }
 
     std::vector<GameObject*> agents;
     std::vector<glm::vec3> starts;
@@ -75,7 +86,7 @@ int main() {
     for (int i = 0; i < 150; i++) {
         GameObject* agent = new GameObject;
         agent->AddComponent<MeshRenderer>(new MeshRenderer(triangleMesh, boidMat, "meshShader"));
-        agent->transform.position = glm::vec3(-9, 0, 9);
+        agent->transform.position = glm::vec3(-15, 0, 8);
         // agent->transform.position = starts[i];
         agent->transform.position.y = 1;
         agent->transform.scale = glm::vec3(.5, 1, .5);
@@ -105,6 +116,8 @@ int main() {
         agent->AddComponent<NavAgent>(new NavAgent(prm, 4, 3));
         // agent->GetComponent<NavAgent>()->SetGoal(-starts[i]);
         // agent->GetComponent<NavAgent>()->FindPath();
+        agent->GetComponent<NavAgent>()->SetGoal(glm::vec3(15, 0, -8));
+        agent->GetComponent<NavAgent>()->FindPath();
         agent->GetComponent<NavAgent>()->active = true;
         navAgentList.push_back(agent->GetComponent<NavAgent>());
     }
