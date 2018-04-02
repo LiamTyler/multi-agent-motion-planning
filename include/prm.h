@@ -72,6 +72,7 @@ class PRM {
         std::vector<PRMNode*> nodes_;
         RenderComponent* nodeRenderer;
         LineRenderer* lineRenderer;
+        CSpace* cspace;
 
     protected:
         // prm helpers
@@ -88,6 +89,5 @@ class PRM {
         std::vector<glm::vec3> ConstructPath(PRMNode* start, AStarNode* node);
 
         float radius;
-        CSpace* cspace;
         std::vector<glm::vec3> lines_;
 };

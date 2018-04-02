@@ -8,6 +8,7 @@
 using namespace std;
 
 std::vector<NavAgent*> navAgentList;
+std::vector<GameObject*> obstacles;
 
 CSpace GenerateCSpace(vector<GameObject*>& obstacles) {
     Transform boundaries = Transform(
@@ -58,12 +59,11 @@ int main() {
     floor.transform.scale = 1.1 * glm::vec3(16, 1, 9);
     floor.AddComponent<MeshRenderer>(new MeshRenderer(planeMesh, grayMat, "meshShader"));
 
-    std::vector<GameObject*> obstacles;
-    // GameObject obstacle;
-    // obstacle.AddComponent<MeshRenderer>(new MeshRenderer(cylinderMesh, redMat, "meshShader"));
-    // obstacle.transform.position.y = 1;
-    // obstacle.transform.scale = glm::vec3(2, 1, 2);
-    // obstacles.push_back(&obstacle);
+    GameObject obstacle;
+    obstacle.AddComponent<MeshRenderer>(new MeshRenderer(cylinderMesh, redMat, "meshShader"));
+    obstacle.transform.position.y = 1;
+    obstacle.transform.scale = glm::vec3(2, 1, 2);
+    obstacles.push_back(&obstacle);
 
     std::vector<GameObject*> agents;
     std::vector<glm::vec3> starts;
@@ -75,7 +75,7 @@ int main() {
     for (int i = 0; i < 150; i++) {
         GameObject* agent = new GameObject;
         agent->AddComponent<MeshRenderer>(new MeshRenderer(triangleMesh, boidMat, "meshShader"));
-        agent->transform.position = glm::vec3(0, 0, 0);
+        agent->transform.position = glm::vec3(-9, 0, 9);
         // agent->transform.position = starts[i];
         agent->transform.position.y = 1;
         agent->transform.scale = glm::vec3(.5, 1, .5);
@@ -127,19 +127,13 @@ int main() {
         camera.Update(dt);
         if (!paused) {
             floor.Update(dt);
+            // fixed boid update at 60 fps
             if (boidTime > boidDT) {
                 for (auto& agent : agents) {
                     agent->Update(boidDT);
-                    agent->GetComponent<NavAgent>()->PostUpdate(boidDT);
                 }
                 boidTime = 0;
             }
-            /*
-            for (auto& agent : agents) {
-                agent->Update(dt);
-                agent->GetComponent<NavAgent>()->PostUpdate(dt);
-            }
-            */
         }
 
         renderer->RenderScene(camera);

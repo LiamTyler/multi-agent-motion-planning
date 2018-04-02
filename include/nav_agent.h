@@ -12,15 +12,16 @@ class NavAgent : public Component {
         bool FindPath();
 
         glm::vec3 GoalForce();
+        glm::vec3 ObstacleAvoid();
         glm::vec3 Separation();
         glm::vec3 Cohesion();
         glm::vec3 Alignment();
 
         void Update(float dt);
-        void PostUpdate(float dt);
         void Start();
         void Stop();
-        glm::vec3 Steer(glm::vec3 v);
+        glm::vec3 SteerToPoint(glm::vec3 v);
+        glm::vec3 SteerToVelocity(glm::vec3 v);
 
         glm::vec3 GetPos() {
             glm::vec3 p = gameObject->transform.position;

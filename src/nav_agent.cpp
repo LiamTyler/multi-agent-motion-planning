@@ -1,6 +1,7 @@
 #include "include/nav_agent.h"
 
 extern std::vector<NavAgent*> navAgentList;
+extern std::vector<GameObject*> obstacles;
 
 NavAgent::NavAgent() {
     velocity = glm::vec3(0);
@@ -49,45 +50,35 @@ void NavAgent::Update(float dt) {
     steerForce = glm::vec3(0);
     if (active) {
         // steerForce += 1 * GoalForce();
-        steerForce += 2 * Separation();
+        steerForce += 5 * ObstacleAvoid();
+        steerForce += 4 * Separation();
         steerForce += 1 * Cohesion();
         steerForce += 1 * Alignment();
-    }
+
+        velocity += steerForce * dt;
+        if (glm::length(velocity) > maxSpeed)
+            velocity = maxSpeed * glm::normalize(velocity);
+        float heading = std::atan2(-velocity.z, velocity.x);
+        gameObject->transform.rotation.y = M_PI + heading;
+
+        gameObject->transform.position += velocity * dt;
+
+        // TODO: delete this once goals are there
+        vec3 p = GetPos();
+        float X = 16;
+        float Z = 9;
+        if (p.x < -X)
+            gameObject->transform.position.x = X;
+        else if (p.x > X)
+            gameObject->transform.position.x = -X;
+        if (p.z < -Z)
+            gameObject->transform.position.z = Z;
+        else if (p.z > Z)
+            gameObject->transform.position.z = -Z;
+        }
 }
 
-void NavAgent::PostUpdate(float dt) {
-    velocity += steerForce * dt;
-    if (glm::length(velocity) > maxSpeed)
-        velocity = maxSpeed * glm::normalize(velocity);
-    float heading = std::atan2(-velocity.z, velocity.x);
-    gameObject->transform.rotation.y = M_PI + heading;
-
-    gameObject->transform.position += velocity * dt;
-    vec3 p = GetPos();
-    float X = 16;
-    float Z = 9;
-    if (p.x < -X)
-        gameObject->transform.position.x = X;
-    else if (p.x > X)
-        gameObject->transform.position.x = -X;
-    if (p.z < -Z)
-        gameObject->transform.position.z = Z;
-    else if (p.z > Z)
-        gameObject->transform.position.z = -Z;
-}
-
-glm::vec3 NavAgent::Steer(glm::vec3 target) {
-    /*
-    if (glm::length(v) > 0) {
-        v = maxSpeed * normalize(v);
-        v = v - velocity;
-        if (glm::length(v) > maxForce)
-            v = glm::normalize(v) * maxForce;
-    } else {
-        v = glm::vec3(0);
-    }
-    return v;
-    */
+glm::vec3 NavAgent::SteerToPoint(glm::vec3 target) {
     glm::vec3 desired = target - GetPos();
     desired = maxSpeed * normalize(desired);
     glm::vec3 sub = desired - velocity;
@@ -96,8 +87,27 @@ glm::vec3 NavAgent::Steer(glm::vec3 target) {
     return sub;
 }
 
+glm::vec3 NavAgent::SteerToVelocity(glm::vec3 targetVel) {
+    if (glm::length(targetVel) > 0) {
+        targetVel = maxSpeed * glm::normalize(targetVel);
+        targetVel -= velocity;
+        if (glm::length(targetVel) > maxForce)
+            targetVel = maxForce * glm::normalize(targetVel);
+    }
+    return targetVel;
+}
+
 glm::vec3 NavAgent::GoalForce() {
     glm::vec3 currPos = GetPos();
+
+    // check to see if next node is visible
+    if (currGoalNode != path.size() - 1) {
+        int index = currGoalNode;
+        bool replan = true;
+        if (prm->cspace->ValidLine(currPos, path[currGoalNode + 1])) {
+            currGoalNode++;
+        }
+    }
     glm::vec3 goalPos = path[currGoalNode];
     glm::vec3 desiredVel = maxSpeed * glm::normalize(goalPos - currPos);
     if (glm::length(goalPos - currPos) < 0.1) {
@@ -110,6 +120,27 @@ glm::vec3 NavAgent::GoalForce() {
         force = maxForce * glm::normalize(force);
 
     return force;
+}
+
+glm::vec3 NavAgent::ObstacleAvoid() {
+    float desiredSep = 2;
+    glm::vec3 sum(0);
+    int count = 0;
+    glm::vec3 pos = GetPos();
+    float rad = gameObject->transform.scale.x;
+    for (int i = 0; i < obstacles.size(); i++) {
+        glm::vec3 opos = obstacles[i]->transform.position;
+        opos.y = 0;
+        float r = obstacles[i]->transform.scale.x;
+        float separation = glm::length(pos - opos) - r - rad;
+        if (separation < desiredSep) {
+            count++;
+            sum += normalize(velocity + (pos - opos)) / std::fmax(0.01, separation);
+        }
+    }
+    if (count)
+        sum = SteerToVelocity(sum);
+    return sum;
 }
 
 glm::vec3 NavAgent::Separation() {
@@ -125,15 +156,9 @@ glm::vec3 NavAgent::Separation() {
             sum += normalize(diff) / dist;
         }
     }
-    if (count > 0)
-        sum /= count;
-    if (glm::length(sum) > 0) {
-        sum = maxSpeed * glm::normalize(sum);
-        sum -= velocity;
-        if (glm::length(sum) > maxForce)
-            sum = maxForce * glm::normalize(sum);
-    }
-
+    if (count)
+        sum = SteerToVelocity(sum / count);
+    
     return sum;
 }
 
@@ -150,12 +175,10 @@ glm::vec3 NavAgent::Cohesion() {
             sum += agent->GetPos();
         }
     }
-    if (count) {
-        sum /= count;
-        return Steer(sum);
-    } else {
-        return glm::vec3(0);
-    }
+    if (count)
+        sum = SteerToPoint(sum / count);
+
+    return sum;
 }
 
 glm::vec3 NavAgent::Alignment() {
@@ -171,14 +194,9 @@ glm::vec3 NavAgent::Alignment() {
             sum += agent->GetVel();
         }
     }
-    if (count)
-        sum /= count;
-    if (glm::length(sum) > 0) {
-        sum = maxSpeed * glm::normalize(sum);
-        sum -= velocity;
-        if (glm::length(sum) > maxForce)
-            sum = maxForce * glm::normalize(sum);
-    }
 
+    if (count)
+        sum = SteerToVelocity(sum / count);
+    
     return sum;
 }
