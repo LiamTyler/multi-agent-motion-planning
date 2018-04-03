@@ -12,6 +12,13 @@ PRM::~PRM() {
     }
 }
 
+void PRM::ClearPRM() {
+    for (int i = 0; i < nodes_.size(); i++) {
+        delete nodes_[i];
+    }
+    lines_.clear();
+}
+
 void PRM::GeneratePRM(int samples) {
     int numPRMNodes = 0;
     nodes_.clear();

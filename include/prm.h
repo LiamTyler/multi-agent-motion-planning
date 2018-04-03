@@ -63,6 +63,7 @@ class PRM {
     public:
         PRM(CSpace* c, float r);
         ~PRM();
+        void ClearPRM();
         void GeneratePRM(int samples);
         std::vector<glm::vec3> GeneratePath(glm::vec3 start, glm::vec3 goal);
 

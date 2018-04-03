@@ -10,6 +10,28 @@ using namespace std;
 std::vector<NavAgent*> navAgentList;
 std::vector<GameObject*> obstacles;
 
+glm::vec3 intersectPlane(const glm::vec3& rayPoint, const glm::vec3& rayDir,
+        const glm::vec3& planeP, const glm::vec3& planeN) {
+    float t = glm::dot(planeP - rayPoint, planeN) / glm::dot(rayDir, planeN);
+    return rayPoint + t * rayDir;
+}
+
+glm::vec3 GetWorldPos(Camera* camera) {
+    float x = input->mouse.x;
+    float y = input->mouse.y;
+    float nsx = 2 * x / 800 - 1;
+    float nsy = 1 - 2 * y / 600;
+    glm::vec4 ray_clip = glm::vec4(nsx, nsy, -1, 1);
+    glm::vec4 ray_eye = glm::inverse(camera->GetP()) * ray_clip;
+    ray_eye = glm::vec4(ray_eye.x, ray_eye.y, -1, 0);
+    glm::vec3 ray_world = glm::normalize(glm::vec3(camera->GetV() * ray_eye));
+    ray_world.y *= -1;
+    ray_world.z *= -1;
+    glm::vec3 ret = intersectPlane(camera->transform.position, ray_world,
+            glm::vec3(0, 0, 0), glm::vec3(0, 1, 0));
+    return ret;
+}
+
 CSpace GenerateCSpace(vector<GameObject*>& obstacles) {
     Transform boundaries = Transform(
             glm::vec3(0, 0, 0),
@@ -53,6 +75,7 @@ int main() {
             50));
     Mesh* planeMesh = resourceManager->LoadMesh("models/plane.obj");
     Mesh* triangleMesh = resourceManager->LoadMesh("models/triangle.obj");
+    Mesh* triangleMesh2 = resourceManager->LoadMesh("models/triangleMesh.obj");
     Mesh* cylinderMesh = resourceManager->LoadMesh("models/cylinder.obj");
 
     GameObject floor;
@@ -67,12 +90,12 @@ int main() {
     opos.push_back(glm::vec3(-3.5, 1, -2.75));
     opos.push_back(glm::vec3(.5, 1, 1));
     opos.push_back(glm::vec3(.75, 1, 2));
-    float r = 1;
+    float obstacle_r = 1;
     for (int i = 0; i < opos.size(); i++) {
         GameObject* obstacle = new GameObject;
         obstacle->AddComponent<MeshRenderer>(new MeshRenderer(cylinderMesh, redMat, "meshShader"));
         obstacle->transform.position = opos[i];
-        obstacle->transform.scale = glm::vec3(r, 1, r);
+        obstacle->transform.scale = glm::vec3(obstacle_r, 1, obstacle_r);
         obstacles.push_back(obstacle);
     }
 
@@ -85,7 +108,7 @@ int main() {
     // for (int i = 0; i < starts.size(); i++) {
     for (int i = 0; i < 150; i++) {
         GameObject* agent = new GameObject;
-        agent->AddComponent<MeshRenderer>(new MeshRenderer(triangleMesh, boidMat, "meshShader"));
+        agent->AddComponent<MeshRenderer>(new MeshRenderer(triangleMesh2, boidMat, "meshShader"));
         agent->transform.position = glm::vec3(-15, 0, 8);
         // agent->transform.position = starts[i];
         agent->transform.position.y = 1;
@@ -93,10 +116,8 @@ int main() {
         agents.push_back(agent);
     }
 
-    Camera camera = Camera();
-    camera.AddComponent<CameraController>(new CameraController(8, .005));
-    camera.transform.rotation.x = glm::radians(-90.0f);
-    camera.transform.position = glm::vec3(0, 20, 0);
+    Transform t(glm::vec3(0, 40, 0), glm::vec3(glm::radians(-90.0f), 0, 0), glm::vec3(1));
+    Camera camera = Camera(t);
 
     renderer->AddShader("lineShader", "shaders/line_shader.vert",
                                       "shaders/line_shader.frag", "");
@@ -104,12 +125,12 @@ int main() {
     PRM* prm = GeneratePRM(cspace, 50, 10);
     prm->nodeRenderer = new PRMRenderer(prm, planeMesh, blueMat, "meshShader");
     prm->nodeRenderer->Start();
-    // prm->lineRenderer = new LineRenderer;
-    // prm->lineRenderer->Start();
+    prm->lineRenderer = new LineRenderer;
+    prm->lineRenderer->Start();
 
-    // glm::vec3* lines = prm->GetLines();
-    // int numLines = prm->GetNumLines();
-    // prm->lineRenderer->UploadData(lines, numLines);
+    glm::vec3* lines = prm->GetLines();
+    int numLines = prm->GetNumLines();
+    prm->lineRenderer->UploadData(lines, numLines);
 
     for (int i = 0; i < agents.size(); i++) {
         GameObject* agent = agents[i];
@@ -124,8 +145,8 @@ int main() {
 
     bool quit = false;
     bool paused = false;
-    window.SetRelativeMouse(true);
-    float boidDT = 1.0 / 60;
+    // window.SetRelativeMouse(true);
+    float boidDT = 1.0 / 260;
     float boidTime = 0;
     while (!quit) {
         window.StartFrame();
@@ -134,18 +155,44 @@ int main() {
             quit = true;
         if (input->KeyPressed(K_P))
             paused = !paused;
+        if (input->KeyPressed(M_LEFT)) {
+            glm::vec3 newGoal = GetWorldPos(&camera);
+            for (int i = 0; i < agents.size(); i++) {
+                GameObject* agent = agents[i];
+                agent->GetComponent<NavAgent>()->SetGoal(newGoal);
+                agent->GetComponent<NavAgent>()->FindPath();
+            }
+        }
+        if (input->KeyPressed(M_RIGHT)) {
+            glm::vec3 pos = GetWorldPos(&camera);
+            pos.y = 1;
+            GameObject* obstacle = new GameObject;
+            obstacle->AddComponent<MeshRenderer>(new MeshRenderer(cylinderMesh, redMat, "meshShader"));
+            obstacle->transform.position = pos;
+            obstacle->transform.scale = glm::vec3(obstacle_r, 1, obstacle_r);
+            obstacles.push_back(obstacle);
+            prm->ClearPRM();
+            prm->GeneratePRM(50);
+            // delete prm->nodeRenderer;
+            // prm->nodeRenderer = new PRMRenderer(prm, planeMesh, blueMat, "meshShader");
+            // prm->nodeRenderer->Start();
+            lines = prm->GetLines();
+            numLines = prm->GetNumLines();
+            prm->lineRenderer->UploadData(lines, numLines);
+
+            // refind new paths
+            for (int i = 0; i < agents.size(); i++) {
+                GameObject* agent = agents[i];
+                agent->GetComponent<NavAgent>()->FindPath();
+            }
+        }
 
         float dt = window.GetDT();
         boidTime += dt;
         camera.Update(dt);
         if (!paused) {
-            floor.Update(dt);
-            // fixed boid update at 60 fps
-            if (boidTime > boidDT) {
-                for (auto& agent : agents) {
-                    agent->Update(boidDT);
-                }
-                boidTime = 0;
+            for (auto& agent : agents) {
+                agent->Update(boidDT);
             }
         }
 

@@ -50,8 +50,8 @@ void NavAgent::Update(float dt) {
     steerForce = glm::vec3(0);
     if (active) {
         steerForce += 2 * GoalForce();
-        steerForce += 15 * ObstacleAvoid();
-        steerForce += 3 * Separation();
+        steerForce += 10 * ObstacleAvoid();
+        steerForce += 4 * Separation();
         steerForce += 1 * Cohesion();
         steerForce += 1 * Alignment();
 
@@ -59,25 +59,10 @@ void NavAgent::Update(float dt) {
         if (glm::length(velocity) > maxSpeed)
             velocity = maxSpeed * glm::normalize(velocity);
         float heading = std::atan2(-velocity.z, velocity.x);
-        gameObject->transform.rotation.y = M_PI + heading;
+        gameObject->transform.rotation.y = heading;
 
         gameObject->transform.position += velocity * dt;
-
-        // TODO: delete this once goals are there
-        /*
-        vec3 p = GetPos();
-        float X = 16;
-        float Z = 9;
-        if (p.x < -X)
-            gameObject->transform.position.x = X;
-        else if (p.x > X)
-            gameObject->transform.position.x = -X;
-        if (p.z < -Z)
-            gameObject->transform.position.z = Z;
-        else if (p.z > Z)
-            gameObject->transform.position.z = -Z;
-        */
-        }
+    }
 }
 
 glm::vec3 NavAgent::SteerToPoint(glm::vec3 target) {
@@ -134,6 +119,12 @@ glm::vec3 NavAgent::ObstacleAvoid() {
         glm::vec3 opos = obstacles[i]->transform.position;
         opos.y = 0;
         float r = obstacles[i]->transform.scale.x + rad;
+        // add spring force if too close
+        glm::vec3 diff = pos - opos;
+        float l = glm::length(diff);
+        if (l < r) {
+            sum += glm::normalize(diff) / std::fmax(0.01, l);
+        }
 
         float t0 = -1, t1 = 0;
         glm::vec3 OC = pos - opos;
@@ -150,7 +141,7 @@ glm::vec3 NavAgent::ObstacleAvoid() {
             glm::vec3 c = pos + t0 * velocity;
             glm::vec3 n = glm::normalize(c - opos);
             count++;
-            sum += n / t0;
+            // sum += n / t0;
         }
     }
     if (count)
