@@ -139,26 +139,9 @@ glm::vec3 NavAgent::ObstacleAvoid() {
         // add spring force if too close
         glm::vec3 diff = pos - opos;
         float l = glm::length(diff);
-        if (l < r) {
-            sum += glm::normalize(diff) / std::fmax(0.01, l);
-        }
-
-        float t0 = -1, t1 = 0;
-        glm::vec3 OC = pos - opos;
-        float a = glm::dot(velocity, velocity);
-        float b = 2 * glm::dot(velocity, OC);
-        float c = glm::dot(OC, OC) - r * r;
-        float disc = b*b - 4*a*c;
-        if (disc < 0)
-            continue;
-        t0 = (-b + std::sqrt(disc)) / 2.0;
-        t1 = (-b - std::sqrt(disc)) / 2.0;
-        t0 = std::fmin(t0, t1);
-        if (t0 > 0 && t0 < 1) {
-            glm::vec3 c = pos + t0 * velocity;
-            glm::vec3 n = glm::normalize(c - opos);
-            count++;
-            // sum += n / t0;
+        if (l < r + desiredSep) {
+            float denom = std::fmax(0.01, l);
+            sum += glm::normalize(diff) / denom;
         }
     }
     if (count)

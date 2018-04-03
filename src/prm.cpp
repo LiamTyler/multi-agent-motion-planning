@@ -144,8 +144,6 @@ void PRM::ClearSearch(PRMNode* start, PRMNode* end, std::vector<AStarNode*>& oli
 std::vector<glm::vec3> PRM::GeneratePath(glm::vec3 start, glm::vec3 end) {
     PRMNode* startPRMNode = AddSearchNode(start);
     PRMNode* endPRMNode = AddSearchNode(end);
-    if (startPRMNode->neighbors.size() == 0)
-        std::cout << "no neighbors for A*" << std::endl;
 
     AStarNode* startNode = new AStarNode(startPRMNode, nullptr);
     std::vector<AStarNode*> openList;
@@ -157,8 +155,6 @@ std::vector<glm::vec3> PRM::GeneratePath(glm::vec3 start, glm::vec3 end) {
         int index = GetLowestCost(openList);
         AStarNode* curr = openList[index];
         if (curr->prmNode == endPRMNode) {
-            if (startPRMNode->neighbors.size() == 0)
-                std::cout << "no neighbors for A*, but path found" << std::endl;
             std::vector<glm::vec3> path = ConstructPath(startPRMNode, curr);
             ClearSearch(startPRMNode, endPRMNode, openList, closedList);
             return path;

@@ -36,7 +36,6 @@ CSpace GenerateCSpace(vector<GameObject*>& obstacles) {
     Transform boundaries = Transform(
             glm::vec3(0, 0, 0),
             glm::vec3(0, 0, 0),
-            // glm::vec3(20, 1, 20));
             glm::vec3(32, 1, 18));
     return CSpace(boundaries, &obstacles, .5);
 }
@@ -128,7 +127,7 @@ int main() {
     starts.push_back(glm::vec3(9, 0, -9));
     starts.push_back(glm::vec3(-9, 0, -9));
     // for (int i = 0; i < starts.size(); i++) {
-    for (int i = 0; i < 150; i++) {
+    for (int i = 0; i < 50; i++) {
         GameObject* agent = new GameObject;
         agent->AddComponent<MeshRenderer>(new MeshRenderer(triangleMesh2, boidMat, "meshShader"));
         agent->transform.position = glm::vec3(-15, 0, 8);
@@ -168,7 +167,7 @@ int main() {
     bool quit = false;
     bool paused = false;
     // window.SetRelativeMouse(true);
-    float boidDT = 1.0 / 260;
+    float boidDT = 1.0 / 200;
     float boidTime = 0;
     while (!quit) {
         window.StartFrame();
@@ -182,7 +181,6 @@ int main() {
             for (int i = 0; i < agents.size(); i++) {
                 GameObject* agent = agents[i];
                 agent->GetComponent<NavAgent>()->SetGoal(newGoal);
-                // agent->GetComponent<NavAgent>()->FindPath();
             }
             RedoAgents();
         }
@@ -206,8 +204,11 @@ int main() {
         boidTime += dt;
         camera.Update(dt);
         if (!paused) {
-            for (auto& agent : agents) {
-                agent->Update(boidDT);
+            if (boidTime > boidDT) {
+                for (auto& agent : agents) {
+                    agent->Update(0.01);
+                }
+                boidTime = 0;
             }
         }
 
