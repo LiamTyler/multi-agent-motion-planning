@@ -47,6 +47,28 @@ PRM* GeneratePRM(CSpace& c, int samples, float neighbor_radius) {
     return prm;
 } 
 
+void RedoAgents() {
+    // if any agent is in an obstacle right now, move him out, and plan new paths
+    for (int i = 0; i < navAgentList.size(); i++) {
+        GameObject* agent = navAgentList[i]->gameObject;
+        glm::vec3 aPos = agent->transform.position;
+        aPos.y = 0;
+        for (int ii = 0; ii < obstacles.size(); ii++) {
+            glm::vec3 oPos = obstacles[ii]->transform.position;
+            oPos.y = 0;
+            // float r = 1.5;
+            float r = obstacles[ii]->transform.scale.x + agent->transform.scale.x;
+            glm::vec3 dir = aPos - oPos;
+            float l = glm::length(dir);
+            if (l <= r) {
+                aPos = oPos + (r + 0.01) * glm::normalize(dir);
+                agent->transform.position.x = aPos.x;
+                agent->transform.position.z = aPos.z;
+            }
+        }
+        agent->GetComponent<NavAgent>()->FindPath();
+    }
+}
 
 int main() {
     InitEngine();
@@ -160,8 +182,9 @@ int main() {
             for (int i = 0; i < agents.size(); i++) {
                 GameObject* agent = agents[i];
                 agent->GetComponent<NavAgent>()->SetGoal(newGoal);
-                agent->GetComponent<NavAgent>()->FindPath();
+                // agent->GetComponent<NavAgent>()->FindPath();
             }
+            RedoAgents();
         }
         if (input->KeyPressed(M_RIGHT)) {
             glm::vec3 pos = GetWorldPos(&camera);
@@ -173,18 +196,10 @@ int main() {
             obstacles.push_back(obstacle);
             prm->ClearPRM();
             prm->GeneratePRM(50);
-            // delete prm->nodeRenderer;
-            // prm->nodeRenderer = new PRMRenderer(prm, planeMesh, blueMat, "meshShader");
-            // prm->nodeRenderer->Start();
             lines = prm->GetLines();
             numLines = prm->GetNumLines();
             prm->lineRenderer->UploadData(lines, numLines);
-
-            // refind new paths
-            for (int i = 0; i < agents.size(); i++) {
-                GameObject* agent = agents[i];
-                agent->GetComponent<NavAgent>()->FindPath();
-            }
+            RedoAgents();
         }
 
         float dt = window.GetDT();

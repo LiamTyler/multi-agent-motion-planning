@@ -38,10 +38,13 @@ void NavAgent::SetGoal(glm::vec3 g) {
 
 bool NavAgent::FindPath() {
     active = false;
-    path = prm->GeneratePath(gameObject->transform.position, goal);
+    path.clear();
+    path = prm->GeneratePath(GetPos(), goal);
     if (path.size()) {
         active = true;
         currGoalNode = 0;
+    } else {
+        return false;
     }
     return active;
 }

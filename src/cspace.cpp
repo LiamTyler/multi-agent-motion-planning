@@ -29,12 +29,13 @@ bool CSpace::IntersectsSphere(const glm::vec3& start, const glm::vec3& dir,
         return false;
     t0 = (-b + std::sqrt(disc)) / 2.0;
     t1 = (-b - std::sqrt(disc)) / 2.0;
-    return (t0 >= 0 || t1 >= 0);
+    return (t0 > 0 || t1 > 0);
 }
 
 bool CSpace::ValidLine(const glm::vec3& start, const glm::vec3& end) {
     for (int i = 0; i < obstacles_->size(); i++) {
         glm::vec3 opoint = (*obstacles_)[i]->transform.position;
+        opoint.y = 0;
         float oradius = (*obstacles_)[i]->transform.scale.x + extent_;
         glm::vec3 dir = glm::normalize(end - start);
         if (IntersectsSphere(start, dir, opoint, oradius))
