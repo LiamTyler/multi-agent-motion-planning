@@ -54,7 +54,7 @@ void NavAgent::Update(float dt) {
     if (active) {
         steerForce += 2 * GoalForce();
         steerForce += 10 * ObstacleAvoid();
-        steerForce += 4 * Separation();
+        steerForce += 5 * Separation();
         steerForce += 1 * Cohesion();
         steerForce += 1 * Alignment();
 
@@ -65,6 +65,20 @@ void NavAgent::Update(float dt) {
         gameObject->transform.rotation.y = heading;
 
         gameObject->transform.position += velocity * dt;
+
+        glm::vec3 p = GetPos();
+        float BX = 1.1 * 16 - .5;
+        float BZ = 1.1 * 9 - .5;
+        if (p.x < -BX) {
+           gameObject->transform.position.x = -BX;
+        } else if (p.x > BX) {
+           gameObject->transform.position.x = BX;
+        }
+        if (p.z < -BZ) {
+           gameObject->transform.position.z = -BZ;
+        } else if (p.z > BZ) {
+           gameObject->transform.position.z = BZ;
+        }
     }
 }
 

@@ -7,8 +7,13 @@ CSpace::CSpace(Transform t, std::vector<GameObject*>* o, float extent) {
 }
 
 bool CSpace::InSpace(const glm::vec3& point) const {
+    float bx = transform_.scale.x / 2 - extent_;
+    float bz = transform_.scale.z / 2 - extent_;
+    if (point.x < -bx || point.x > bx || point.z < -bz || point.z > bz)
+        return false;
     for (int i = 0; i < obstacles_->size(); i++) {
         glm::vec3 opoint = (*obstacles_)[i]->transform.position;
+        opoint.y = 0;
         float oradius = (*obstacles_)[i]->transform.scale.x + extent_;
         glm::vec3 dvec = point - opoint;
         dvec.y = 0;
