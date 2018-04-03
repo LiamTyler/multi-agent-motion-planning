@@ -52,9 +52,9 @@ bool NavAgent::FindPath() {
 void NavAgent::Update(float dt) {
     steerForce = glm::vec3(0);
     if (active) {
-        steerForce += 2 * GoalForce();
-        steerForce += 10 * ObstacleAvoid();
-        steerForce += 5 * Separation();
+        steerForce += 2.5 * GoalForce();
+        steerForce += 12 * ObstacleAvoid();
+        steerForce += 4 * Separation();
         steerForce += 1 * Cohesion();
         steerForce += 1 * Alignment();
 
@@ -106,8 +106,6 @@ glm::vec3 NavAgent::GoalForce() {
 
     // check to see if next node is visible
     if (currGoalNode != path.size() - 1) {
-        int index = currGoalNode;
-        bool replan = true;
         if (prm->cspace->ValidLine(currPos, path[currGoalNode + 1])) {
             currGoalNode++;
         }
@@ -127,7 +125,7 @@ glm::vec3 NavAgent::GoalForce() {
 }
 
 glm::vec3 NavAgent::ObstacleAvoid() {
-    float desiredSep = 2;
+    float desiredSep = 1;
     glm::vec3 sum(0);
     int count = 0;
     glm::vec3 pos = GetPos();
@@ -140,7 +138,7 @@ glm::vec3 NavAgent::ObstacleAvoid() {
         glm::vec3 diff = pos - opos;
         float l = glm::length(diff);
         if (l < r + desiredSep) {
-            float denom = std::fmax(0.01, l);
+            float denom = 0.5 * std::fmax(0.01, l);
             sum += glm::normalize(diff) / denom;
         }
     }

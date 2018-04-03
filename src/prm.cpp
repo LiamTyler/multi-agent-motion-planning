@@ -103,18 +103,29 @@ std::vector<glm::vec3> PRM::ConstructPath(PRMNode* start, AStarNode* node) {
 }
 
 void PRM::FindSearchNeighbors(PRMNode* node) {
-    for (int i = 0; i < nodes_.size(); i++) {
+    glm::vec3 start = node->position;
+    PRMNode* closest_neighbor = nullptr;
+    float closest_dist = 0;
+    for (int i = 1; i < nodes_.size(); i++) {
         PRMNode* neighbor = nodes_[i];
         if (neighbor == node)
             continue;
-        glm::vec3 start = node->position;
         glm::vec3 end = neighbor->position;
         float l = glm::length(end - start);
-        if (l <= radius && cspace->ValidLine(start, end)) {
-            PRMNeighbor* n = new PRMNeighbor(neighbor, l);
-            node->neighbors.push_back(n);
-            neighbor->neighbors.push_back(new PRMNeighbor(node, l));
+        if (cspace->ValidLine(start, end)) {
+            if (closest_neighbor == nullptr) {
+                closest_neighbor = neighbor;
+                closest_dist = l;
+            } else if (l < closest_dist) {
+                closest_neighbor = neighbor;
+                closest_dist = l;
+            }
         }
+    }
+    if (closest_neighbor != nullptr) {
+        PRMNeighbor* n = new PRMNeighbor(closest_neighbor, closest_dist);
+        node->neighbors.push_back(n);
+        closest_neighbor->neighbors.push_back(new PRMNeighbor(node, closest_dist));
     }
 }
 

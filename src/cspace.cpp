@@ -38,11 +38,11 @@ bool CSpace::IntersectsSphere(const glm::vec3& start, const glm::vec3& dir,
 }
 
 bool CSpace::ValidLine(const glm::vec3& start, const glm::vec3& end) {
+    glm::vec3 dir = glm::normalize(end - start);
     for (int i = 0; i < obstacles_->size(); i++) {
         glm::vec3 opoint = (*obstacles_)[i]->transform.position;
         opoint.y = 0;
         float oradius = (*obstacles_)[i]->transform.scale.x + extent_;
-        glm::vec3 dir = glm::normalize(end - start);
         if (IntersectsSphere(start, dir, opoint, oradius))
             return false;
     }

@@ -127,7 +127,7 @@ int main() {
     starts.push_back(glm::vec3(9, 0, -9));
     starts.push_back(glm::vec3(-9, 0, -9));
     // for (int i = 0; i < starts.size(); i++) {
-    for (int i = 0; i < 50; i++) {
+    for (int i = 0; i < 200; i++) {
         GameObject* agent = new GameObject;
         agent->AddComponent<MeshRenderer>(new MeshRenderer(triangleMesh2, boidMat, "meshShader"));
         agent->transform.position = glm::vec3(-15, 0, 8);
@@ -143,7 +143,7 @@ int main() {
     renderer->AddShader("lineShader", "shaders/line_shader.vert",
                                       "shaders/line_shader.frag", "");
     CSpace cspace = GenerateCSpace(obstacles);
-    PRM* prm = GeneratePRM(cspace, 50, 10);
+    PRM* prm = GeneratePRM(cspace, 20, 10);
     prm->nodeRenderer = new PRMRenderer(prm, planeMesh, blueMat, "meshShader");
     prm->nodeRenderer->Start();
     prm->lineRenderer = new LineRenderer;
@@ -160,7 +160,6 @@ int main() {
         // agent->GetComponent<NavAgent>()->FindPath();
         agent->GetComponent<NavAgent>()->SetGoal(glm::vec3(15, 0, -8));
         agent->GetComponent<NavAgent>()->FindPath();
-        agent->GetComponent<NavAgent>()->active = true;
         navAgentList.push_back(agent->GetComponent<NavAgent>());
     }
 
@@ -193,7 +192,7 @@ int main() {
             obstacle->transform.scale = glm::vec3(obstacle_r, 1, obstacle_r);
             obstacles.push_back(obstacle);
             prm->ClearPRM();
-            prm->GeneratePRM(50);
+            prm->GeneratePRM(70);
             lines = prm->GetLines();
             numLines = prm->GetNumLines();
             prm->lineRenderer->UploadData(lines, numLines);
@@ -206,7 +205,7 @@ int main() {
         if (!paused) {
             if (boidTime > boidDT) {
                 for (auto& agent : agents) {
-                    agent->Update(0.01);
+                    agent->Update(0.007);
                 }
                 boidTime = 0;
             }
